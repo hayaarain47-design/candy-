@@ -1,0 +1,1848 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sweet Pop - Match 3</title>
+
+<style>
+*{
+    box-sizing:border-box;
+    margin:0;
+    padding:0;
+}
+
+body{
+    min-height:100vh;
+    font-family:Arial,sans-serif;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    color:white;
+    overflow:auto;
+
+    background:
+        radial-gradient(circle at 20% 10%,#ffb6e6 0%,transparent 30%),
+        radial-gradient(circle at 80% 90%,#9c8cff 0%,transparent 35%),
+        linear-gradient(135deg,#24164d,#120d2d);
+}
+
+.game{
+    width:520px;
+    max-width:95vw;
+    text-align:center;
+}
+
+.logo{
+    font-size:42px;
+    font-weight:900;
+    letter-spacing:3px;
+    margin-bottom:12px;
+
+    background:linear-gradient(
+        90deg,
+        #ff7dcc,
+        #ffd86b,
+        #9f8cff
+    );
+
+    -webkit-background-clip:text;
+    color:transparent;
+
+    filter:drop-shadow(0 5px 10px rgba(255,255,255,.15));
+}
+
+.subtitle{
+    color:#d5cfee;
+    font-size:13px;
+    margin-bottom:15px;
+}
+
+.topbar{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:7px;
+    margin-bottom:12px;
+}
+
+.info{
+    background:rgba(255,255,255,.09);
+    border:1px solid rgba(255,255,255,.15);
+    border-radius:12px;
+    padding:9px 3px;
+    backdrop-filter:blur(8px);
+}
+
+.info small{
+    display:block;
+    color:#c9c2df;
+    font-size:10px;
+}
+
+.info strong{
+    font-size:17px;
+}
+
+.target-box{
+    background:rgba(255,255,255,.08);
+    border:1px solid rgba(255,255,255,.15);
+    border-radius:14px;
+    padding:10px;
+    margin-bottom:12px;
+}
+
+.target-title{
+    font-size:12px;
+    color:#d7d0eb;
+    margin-bottom:6px;
+}
+
+.progress{
+    width:100%;
+    height:9px;
+    background:#211a40;
+    border-radius:20px;
+    overflow:hidden;
+}
+
+.progress-bar{
+    height:100%;
+    width:0%;
+    background:linear-gradient(90deg,#ff6fc8,#ffd45f);
+    border-radius:20px;
+    transition:.3s;
+}
+
+#board{
+    width:500px;
+    height:500px;
+    max-width:100%;
+
+    padding:8px;
+
+    display:grid;
+    grid-template-columns:repeat(8,1fr);
+    gap:5px;
+
+    border-radius:20px;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(255,255,255,.18),
+            rgba(255,255,255,.04)
+        );
+
+    border:2px solid rgba(255,255,255,.2);
+
+    box-shadow:
+        0 20px 50px rgba(0,0,0,.4),
+        inset 0 0 25px rgba(255,255,255,.05);
+}
+
+.candy{
+    position:relative;
+
+    border-radius:12px;
+
+    cursor:pointer;
+
+    transition:
+        transform .15s,
+        filter .15s;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    user-select:none;
+
+    box-shadow:
+        inset 0 4px 5px rgba(255,255,255,.3),
+        inset 0 -5px 8px rgba(0,0,0,.15),
+        0 3px 5px rgba(0,0,0,.2);
+}
+
+.candy:hover{
+    transform:scale(.94);
+    filter:brightness(1.12);
+}
+
+.candy.selected{
+    transform:scale(.86);
+    box-shadow:
+        0 0 0 4px white,
+        0 0 20px white;
+    z-index:5;
+}
+
+.candy.matching{
+    animation:pop .3s forwards;
+}
+
+.candy.fall{
+    animation:fall .28s ease-out;
+}
+
+@keyframes pop{
+    0%{
+        transform:scale(1);
+        opacity:1;
+    }
+
+    60%{
+        transform:scale(1.2) rotate(8deg);
+    }
+
+    100%{
+        transform:scale(0);
+        opacity:0;
+    }
+}
+
+@keyframes fall{
+    from{
+        transform:translateY(-40px);
+        opacity:.2;
+    }
+
+    to{
+        transform:translateY(0);
+        opacity:1;
+    }
+}
+
+/* Candy colors */
+
+.red{
+    background:linear-gradient(145deg,#ff6b8a,#e52f62);
+}
+
+.blue{
+    background:linear-gradient(145deg,#68d9ff,#3788ee);
+}
+
+.green{
+    background:linear-gradient(145deg,#77efaa,#32b96c);
+}
+
+.yellow{
+    background:linear-gradient(145deg,#ffe77a,#f3b82e);
+}
+
+.purple{
+    background:linear-gradient(145deg,#c58cff,#814ce4);
+}
+
+.pink{
+    background:linear-gradient(145deg,#ff91df,#ed4fbd);
+}
+
+/* Candy symbols */
+
+.candy::after{
+    font-size:24px;
+    text-shadow:0 2px 3px rgba(0,0,0,.2);
+}
+
+.red::after{
+    content:"♥";
+}
+
+.blue::after{
+    content:"◆";
+}
+
+.green::after{
+    content:"🍃";
+    font-size:20px;
+}
+
+.yellow::after{
+    content:"★";
+}
+
+.purple::after{
+    content:"✦";
+}
+
+.pink::after{
+    content:"●";
+}
+
+/* Striped candy */
+
+.striped{
+    background:
+        repeating-linear-gradient(
+            45deg,
+            rgba(255,255,255,.35) 0px,
+            rgba(255,255,255,.35) 5px,
+            transparent 5px,
+            transparent 10px
+        ),
+        linear-gradient(145deg,#ff72d0,#9c51ed);
+}
+
+.striped::after{
+    content:"⚡";
+    font-size:21px;
+}
+
+.bottom-buttons{
+    display:flex;
+    justify-content:center;
+    gap:10px;
+    margin-top:13px;
+}
+
+button{
+    border:0;
+    padding:11px 23px;
+    border-radius:10px;
+
+    color:white;
+    font-weight:bold;
+
+    cursor:pointer;
+
+    background:linear-gradient(
+        135deg,
+        #ff63c7,
+        #8b6cff
+    );
+
+    box-shadow:0 6px 15px rgba(0,0,0,.2);
+
+    transition:.2s;
+}
+
+button:hover{
+    transform:translateY(-2px);
+    box-shadow:0 8px 20px rgba(0,0,0,.3);
+}
+
+#pauseBtn{
+    background:#332b58;
+}
+
+.screen{
+    position:fixed;
+    inset:0;
+
+    display:flex;
+    justify-content:center;
+    align-items:center;
+
+    background:rgba(10,6,25,.88);
+
+    backdrop-filter:blur(8px);
+
+    z-index:50;
+}
+
+.hidden{
+    display:none;
+}
+
+.modal{
+    width:420px;
+    max-width:90%;
+
+    padding:32px;
+
+    text-align:center;
+
+    border-radius:25px;
+
+    background:
+        linear-gradient(
+            145deg,
+            #2d2054,
+            #17102f
+        );
+
+    border:1px solid rgba(255,255,255,.2);
+
+    box-shadow:
+        0 25px 70px rgba(0,0,0,.5);
+}
+
+.modal .emoji{
+    font-size:60px;
+    margin-bottom:8px;
+}
+
+.modal h1{
+    font-size:35px;
+    margin-bottom:8px;
+}
+
+.modal p{
+    color:#c7c0da;
+    line-height:1.6;
+    margin-bottom:20px;
+}
+
+.stars{
+    font-size:40px;
+    letter-spacing:5px;
+    margin:12px;
+}
+
+.empty-star{
+    opacity:.25;
+}
+
+#comboText{
+    position:fixed;
+    pointer-events:none;
+
+    font-size:28px;
+    font-weight:900;
+
+    color:#fff;
+
+    text-shadow:
+        0 0 10px #ff70cc,
+        0 0 25px #8b6cff;
+
+    opacity:0;
+}
+
+@keyframes combo{
+    0%{
+        transform:translate(-50%,20px) scale(.5);
+        opacity:0;
+    }
+
+    30%{
+        transform:translate(-50%,0) scale(1.2);
+        opacity:1;
+    }
+
+    100%{
+        transform:translate(-50%,-60px) scale(1);
+        opacity:0;
+    }
+}
+
+@media(max-width:540px){
+
+    .logo{
+        font-size:32px;
+    }
+
+    #board{
+        width:95vw;
+        height:95vw;
+        gap:3px;
+        padding:5px;
+    }
+
+    .candy{
+        border-radius:8px;
+    }
+
+    .candy::after{
+        font-size:17px;
+    }
+
+}
+</style>
+</head>
+
+<body>
+
+<div class="game">
+
+    <div class="logo">SWEET POP</div>
+
+    <div class="subtitle">
+        Match • Blast • Score
+    </div>
+
+    <div class="topbar">
+
+        <div class="info">
+            <small>LEVEL</small>
+            <strong id="level">1</strong>
+        </div>
+
+        <div class="info">
+            <small>SCORE</small>
+            <strong id="score">0</strong>
+        </div>
+
+        <div class="info">
+            <small>MOVES</small>
+            <strong id="moves">25</strong>
+        </div>
+
+        <div class="info">
+            <small>BEST</small>
+            <strong id="best">0</strong>
+        </div>
+
+    </div>
+
+    <div class="target-box">
+
+        <div class="target-title">
+            Target: <strong id="target">500</strong>
+            &nbsp; • &nbsp;
+            <span id="targetProgress">0</span>
+        </div>
+
+        <div class="progress">
+            <div
+                class="progress-bar"
+                id="progressBar">
+            </div>
+        </div>
+
+    </div>
+
+    <div id="board"></div>
+
+    <div class="bottom-buttons">
+
+        <button onclick="newGame()">
+            NEW GAME
+        </button>
+
+        <button
+            id="pauseBtn"
+            onclick="togglePause()">
+            PAUSE
+        </button>
+
+    </div>
+
+</div>
+
+
+<!-- START SCREEN -->
+
+<div class="screen" id="startScreen">
+
+    <div class="modal">
+
+        <div class="emoji">🍭</div>
+
+        <h1>Sweet Pop</h1>
+
+        <p>
+            Match 3 or more candies to score points.
+            Create special striped candies with bigger matches!
+        </p>
+
+        <button onclick="newGame()">
+            START GAME
+        </button>
+
+    </div>
+
+</div>
+
+
+<!-- PAUSE -->
+
+<div class="screen hidden" id="pauseScreen">
+
+    <div class="modal">
+
+        <div class="emoji">⏸️</div>
+
+        <h1>Paused</h1>
+
+        <p>
+            Your candies are waiting!
+        </p>
+
+        <button onclick="togglePause()">
+            RESUME
+        </button>
+
+    </div>
+
+</div>
+
+
+<!-- LEVEL COMPLETE -->
+
+<div class="screen hidden" id="levelScreen">
+
+    <div class="modal">
+
+        <div class="emoji">🎉</div>
+
+        <h1>Level Complete!</h1>
+
+        <div
+            class="stars"
+            id="levelStars">
+            ⭐⭐⭐
+        </div>
+
+        <p>
+            Amazing! You reached the target.
+        </p>
+
+        <button onclick="nextLevel()">
+            NEXT LEVEL
+        </button>
+
+    </div>
+
+</div>
+
+
+<!-- GAME OVER -->
+
+<div class="screen hidden" id="gameOverScreen">
+
+    <div class="modal">
+
+        <div class="emoji">🍬</div>
+
+        <h1>Game Over</h1>
+
+        <div
+            class="stars"
+            id="gameStars">
+            ⭐
+        </div>
+
+        <p>
+            Final Score:
+            <strong id="finalScore">0</strong>
+            <br><br>
+
+            Best Score:
+            <strong id="finalBest">0</strong>
+        </p>
+
+        <button onclick="newGame()">
+            PLAY AGAIN
+        </button>
+
+    </div>
+
+</div>
+
+
+<div id="comboText"></div>
+
+
+<script>
+
+/* =====================================
+   GAME SETUP
+===================================== */
+
+const board = document.getElementById("board");
+
+const size = 8;
+
+const candyTypes = [
+    "red",
+    "blue",
+    "green",
+    "yellow",
+    "purple",
+    "pink"
+];
+
+let grid = [];
+
+let selected = null;
+
+let score = 0;
+
+let best =
+    Number(
+        localStorage.getItem("sweetPopBest")
+    ) || 0;
+
+let moves = 25;
+
+let level = 1;
+
+let target = 500;
+
+let paused = false;
+
+let busy = false;
+
+
+/* =====================================
+   UI ELEMENTS
+===================================== */
+
+const scoreEl =
+    document.getElementById("score");
+
+const bestEl =
+    document.getElementById("best");
+
+const movesEl =
+    document.getElementById("moves");
+
+const levelEl =
+    document.getElementById("level");
+
+const targetEl =
+    document.getElementById("target");
+
+const targetProgress =
+    document.getElementById("targetProgress");
+
+const progressBar =
+    document.getElementById("progressBar");
+
+const startScreen =
+    document.getElementById("startScreen");
+
+const pauseScreen =
+    document.getElementById("pauseScreen");
+
+const levelScreen =
+    document.getElementById("levelScreen");
+
+const gameOverScreen =
+    document.getElementById("gameOverScreen");
+
+
+bestEl.textContent = best;
+
+
+/* =====================================
+   SOUND
+===================================== */
+
+let audioContext;
+
+function playSound(
+    frequency,
+    duration = .08
+){
+
+    try{
+
+        if(!audioContext){
+
+            audioContext =
+                new AudioContext();
+
+        }
+
+        const oscillator =
+            audioContext.createOscillator();
+
+        const gain =
+            audioContext.createGain();
+
+        oscillator.frequency.value =
+            frequency;
+
+        oscillator.type =
+            "sine";
+
+        gain.gain.setValueAtTime(
+            .04,
+            audioContext.currentTime
+        );
+
+        gain.gain.exponentialRampToValueAtTime(
+            .001,
+            audioContext.currentTime +
+            duration
+        );
+
+        oscillator.connect(gain);
+
+        gain.connect(
+            audioContext.destination
+        );
+
+        oscillator.start();
+
+        oscillator.stop(
+            audioContext.currentTime +
+            duration
+        );
+
+    }
+    catch(error){}
+
+}
+
+
+/* =====================================
+   RANDOM CANDY
+===================================== */
+
+function randomCandy(){
+
+    return candyTypes[
+        Math.floor(
+            Math.random() *
+            candyTypes.length
+        )
+    ];
+
+}
+
+
+/* =====================================
+   CREATE BOARD
+===================================== */
+
+function createBoard(){
+
+    grid = [];
+
+    for(let row = 0; row < size; row++){
+
+        grid[row] = [];
+
+        for(let col = 0; col < size; col++){
+
+            let candy;
+
+            do{
+
+                candy = randomCandy();
+
+            }
+            while(
+                createsStartingMatch(
+                    row,
+                    col,
+                    candy
+                )
+            );
+
+            grid[row][col] = candy;
+
+        }
+
+    }
+
+}
+
+
+/* =====================================
+   PREVENT INITIAL MATCH
+===================================== */
+
+function createsStartingMatch(
+    row,
+    col,
+    candy
+){
+
+    if(
+        col >= 2 &&
+        grid[row][col-1] === candy &&
+        grid[row][col-2] === candy
+    ){
+
+        return true;
+
+    }
+
+    if(
+        row >= 2 &&
+        grid[row-1][col] === candy &&
+        grid[row-2][col] === candy
+    ){
+
+        return true;
+
+    }
+
+    return false;
+
+}
+
+
+/* =====================================
+   RENDER BOARD
+===================================== */
+
+function renderBoard(){
+
+    board.innerHTML = "";
+
+    for(let row = 0; row < size; row++){
+
+        for(let col = 0; col < size; col++){
+
+            const candy =
+                document.createElement("div");
+
+            candy.className =
+                "candy " +
+                grid[row][col];
+
+            candy.dataset.row = row;
+            candy.dataset.col = col;
+
+            candy.addEventListener(
+                "click",
+                () =>
+                    handleClick(row,col)
+            );
+
+            board.appendChild(candy);
+
+        }
+
+    }
+
+}
+
+
+/* =====================================
+   CLICK CANDY
+===================================== */
+
+function handleClick(row,col){
+
+    if(
+        busy ||
+        paused
+    ){
+
+        return;
+
+    }
+
+
+    if(!selected){
+
+        selected = {
+            row:row,
+            col:col
+        };
+
+        highlightSelected();
+
+        return;
+
+    }
+
+
+    const distance =
+        Math.abs(
+            selected.row-row
+        ) +
+        Math.abs(
+            selected.col-col
+        );
+
+
+    if(distance === 1){
+
+        swap(
+            selected.row,
+            selected.col,
+            row,
+            col
+        );
+
+        selected = null;
+
+        removeHighlight();
+
+        attemptMove();
+
+    }
+    else{
+
+        selected = {
+            row:row,
+            col:col
+        };
+
+        highlightSelected();
+
+    }
+
+}
+
+
+/* =====================================
+   HIGHLIGHT
+===================================== */
+
+function highlightSelected(){
+
+    removeHighlight();
+
+    const index =
+        selected.row * size +
+        selected.col;
+
+    board.children[
+        index
+    ].classList.add(
+        "selected"
+    );
+
+}
+
+
+/* =====================================
+   REMOVE HIGHLIGHT
+===================================== */
+
+function removeHighlight(){
+
+    document
+        .querySelectorAll(".selected")
+        .forEach(el =>
+            el.classList.remove(
+                "selected"
+            )
+        );
+
+}
+
+
+/* =====================================
+   SWAP
+===================================== */
+
+function swap(
+    r1,c1,
+    r2,c2
+){
+
+    const temp =
+        grid[r1][c1];
+
+    grid[r1][c1] =
+        grid[r2][c2];
+
+    grid[r2][c2] =
+        temp;
+
+}
+
+
+/* =====================================
+   ATTEMPT MOVE
+===================================== */
+
+async function attemptMove(){
+
+    busy = true;
+
+    renderBoard();
+
+    await delay(120);
+
+    let matches =
+        findMatches();
+
+
+    if(matches.length === 0){
+
+        swap(
+            lastSwap.r1,
+            lastSwap.c1,
+            lastSwap.r2,
+            lastSwap.c2
+        );
+
+        renderBoard();
+
+        playSound(150,.1);
+
+        busy = false;
+
+        return;
+
+    }
+
+
+    moves--;
+
+    movesEl.textContent =
+        moves;
+
+    await processMatches(
+        matches
+    );
+
+    busy = false;
+
+    checkGameState();
+
+}
+
+
+/* =====================================
+   STORE LAST SWAP
+===================================== */
+
+let lastSwap = {};
+
+const originalSwap = swap;
+
+
+/*
+   We wrap swap so the game remembers
+   which two candies were exchanged.
+*/
+
+function performSwap(
+    r1,c1,
+    r2,c2
+){
+
+    lastSwap = {
+        r1:r1,
+        c1:c1,
+        r2:r2,
+        c2:c2
+    };
+
+    originalSwap(
+        r1,c1,
+        r2,c2
+    );
+
+}
+
+
+/* =====================================
+   REPLACE SWAP FUNCTION
+===================================== */
+
+swap = performSwap;
+
+
+/* =====================================
+   FIND MATCHES
+===================================== */
+
+function findMatches(){
+
+    const matches =
+        new Set();
+
+
+    /* Horizontal */
+
+    for(
+        let row = 0;
+        row < size;
+        row++
+    ){
+
+        let count = 1;
+
+        for(
+            let col = 1;
+            col <= size;
+            col++
+        ){
+
+            if(
+                col < size &&
+                grid[row][col] !== "" &&
+                grid[row][col] ===
+                grid[row][col-1]
+            ){
+
+                count++;
+
+            }
+            else{
+
+                if(count >= 3){
+
+                    for(
+                        let k = 0;
+                        k < count;
+                        k++
+                    ){
+
+                        matches.add(
+                            `${row},${col-1-k}`
+                        );
+
+                    }
+
+                }
+
+                count = 1;
+
+            }
+
+        }
+
+    }
+
+
+    /* Vertical */
+
+    for(
+        let col = 0;
+        col < size;
+        col++
+    ){
+
+        let count = 1;
+
+        for(
+            let row = 1;
+            row <= size;
+            row++
+        ){
+
+            if(
+                row < size &&
+                grid[row][col] !== "" &&
+                grid[row][col] ===
+                grid[row-1][col]
+            ){
+
+                count++;
+
+            }
+            else{
+
+                if(count >= 3){
+
+                    for(
+                        let k = 0;
+                        k < count;
+                        k++
+                    ){
+
+                        matches.add(
+                            `${row-1-k},${col}`
+                        );
+
+                    }
+
+                }
+
+                count = 1;
+
+            }
+
+        }
+
+    }
+
+
+    return [...matches];
+
+}
+
+
+/* =====================================
+   PROCESS MATCHES
+===================================== */
+
+async function processMatches(
+    matches
+){
+
+    let combo = 0;
+
+    while(matches.length > 0){
+
+        combo++;
+
+        const points =
+            matches.length *
+            10 *
+            combo;
+
+        score += points;
+
+        updateScore();
+
+        showCombo(
+            combo,
+            matches.length
+        );
+
+        playSound(
+            500 + combo * 100,
+            .12
+        );
+
+
+        /* Special candy */
+
+        if(matches.length >= 4){
+
+            createSpecialCandy(
+                matches[0]
+            );
+
+        }
+
+
+        await animateMatches(
+            matches
+        );
+
+
+        /* Remove */
+
+        matches.forEach(
+            key => {
+
+                const [r,c] =
+                    key
+                    .split(",")
+                    .map(Number);
+
+                grid[r][c] = "";
+
+            }
+        );
+
+
+        await delay(80);
+
+        dropCandies();
+
+        fillEmpty();
+
+        renderBoard();
+
+        await delay(260);
+
+        matches =
+            findMatches();
+
+    }
+
+}
+
+
+/* =====================================
+   ANIMATE MATCHES
+===================================== */
+
+function animateMatches(
+    matches
+){
+
+    return new Promise(
+        resolve => {
+
+            matches.forEach(
+                key => {
+
+                    const [r,c] =
+                        key
+                        .split(",")
+                        .map(Number);
+
+                    const index =
+                        r * size + c;
+
+                    if(board.children[index]){
+
+                        board
+                        .children[index]
+                        .classList.add(
+                            "matching"
+                        );
+
+                    }
+
+                }
+            );
+
+            setTimeout(
+                resolve,
+                300
+            );
+
+        }
+    );
+
+}
+
+
+/* =====================================
+   CREATE SPECIAL CANDY
+===================================== */
+
+function createSpecialCandy(
+    key
+){
+
+    const [r,c] =
+        key
+        .split(",")
+        .map(Number);
+
+    grid[r][c] =
+        "striped";
+
+}
+
+
+/* =====================================
+   DROP CANDIES
+===================================== */
+
+function dropCandies(){
+
+    for(
+        let col = 0;
+        col < size;
+        col++
+    ){
+
+        let emptyRows = [];
+
+        for(
+            let row = size-1;
+            row >= 0;
+            row--
+        ){
+
+            if(grid[row][col] === ""){
+
+                emptyRows.push(row);
+
+            }
+        }
+
+
+        for(
+            let row = size-1;
+            row >= 0;
+            row--
+        ){
+
+            if(
+                grid[row][col] !== "" &&
+                emptyRows.length > 0
+            ){
+
+                const targetRow =
+                    emptyRows.shift();
+
+                grid[targetRow][col] =
+                    grid[row][col];
+
+                grid[row][col] = "";
+
+                emptyRows.push(row);
+
+            }
+
+        }
+
+    }
+
+}
+
+
+/* =====================================
+   FILL EMPTY
+===================================== */
+
+function fillEmpty(){
+
+    for(
+        let row = 0;
+        row < size;
+        row++
+    ){
+
+        for(
+            let col = 0;
+            col < size;
+            col++
+        ){
+
+            if(grid[row][col] === ""){
+
+                grid[row][col] =
+                    randomCandy();
+
+            }
+
+        }
+
+    }
+
+}
+
+
+/* =====================================
+   SCORE
+===================================== */
+
+function updateScore(){
+
+    scoreEl.textContent =
+        score;
+
+    targetProgress.textContent =
+        Math.min(score,target);
+
+    const percent =
+        Math.min(
+            100,
+            (score / target) * 100
+        );
+
+    progressBar.style.width =
+        percent + "%";
+
+
+    if(score > best){
+
+        best = score;
+
+        bestEl.textContent =
+            best;
+
+        localStorage.setItem(
+            "sweetPopBest",
+            best
+        );
+
+    }
+
+}
+
+
+/* =====================================
+   COMBO TEXT
+===================================== */
+
+function showCombo(
+    combo,
+    amount
+){
+
+    const text =
+        document.getElementById(
+            "comboText"
+        );
+
+    if(combo >= 2){
+
+        text.textContent =
+            combo + "x COMBO! +" +
+            amount * 10;
+
+        text.style.left =
+            "50%";
+
+        text.style.top =
+            "45%";
+
+        text.style.animation =
+            "none";
+
+        void text.offsetWidth;
+
+        text.style.animation =
+            "combo .7s forwards";
+
+    }
+
+}
+
+
+/* =====================================
+   CHECK GAME STATE
+===================================== */
+
+function checkGameState(){
+
+    if(score >= target){
+
+        completeLevel();
+
+        return;
+
+    }
+
+
+    if(moves <= 0){
+
+        gameOver();
+
+    }
+
+}
+
+
+/* =====================================
+   LEVEL COMPLETE
+===================================== */
+
+function completeLevel(){
+
+    const stars =
+        score >= target * 2
+        ? 3
+        : score >= target * 1.5
+        ? 2
+        : 1;
+
+    let starText = "";
+
+    for(
+        let i=0;
+        i<3;
+        i++
+    ){
+
+        starText +=
+            i < stars
+            ? "⭐"
+            : '<span class="empty-star">⭐</span>';
+
+    }
+
+    document.getElementById(
+        "levelStars"
+    ).innerHTML =
+        starText;
+
+    levelScreen.classList.remove(
+        "hidden"
+    );
+
+    playSound(900,.3);
+
+}
+
+
+/* =====================================
+   NEXT LEVEL
+===================================== */
+
+function nextLevel(){
+
+    level++;
+
+    target =
+        500 +
+        (level - 1) * 350;
+
+    moves =
+        Math.max(
+            15,
+            25 - Math.floor(level/2)
+        );
+
+    score = 0;
+
+    levelEl.textContent =
+        level;
+
+    targetEl.textContent =
+        target;
+
+    movesEl.textContent =
+        moves;
+
+    progressBar.style.width =
+        "0%";
+
+    targetProgress.textContent =
+        "0";
+
+    levelScreen.classList.add(
+        "hidden"
+    );
+
+    createBoard();
+
+    renderBoard();
+
+}
+
+
+/* =====================================
+   NEW GAME
+===================================== */
+
+function newGame(){
+
+    startScreen.classList.add(
+        "hidden"
+    );
+
+    gameOverScreen.classList.add(
+        "hidden"
+    );
+
+    levelScreen.classList.add(
+        "hidden"
+    );
+
+    pauseScreen.classList.add(
+        "hidden"
+    );
+
+    level = 1;
+
+    score = 0;
+
+    moves = 25;
+
+    target = 500;
+
+    paused = false;
+
+    busy = false;
+
+    selected = null;
+
+    levelEl.textContent =
+        level;
+
+    scoreEl.textContent =
+        score;
+
+    movesEl.textContent =
+        moves;
+
+    targetEl.textContent =
+        target;
+
+    progressBar.style.width =
+        "0%";
+
+    targetProgress.textContent =
+        "0";
+
+    createBoard();
+
+    renderBoard();
+
+    playSound(600,.1);
+
+}
+
+
+/* =====================================
+   PAUSE
+===================================== */
+
+function togglePause(){
+
+    if(busy) return;
+
+    paused = !paused;
+
+    if(paused){
+
+        pauseScreen.classList.remove(
+            "hidden"
+        );
+
+    }
+    else{
+
+        pauseScreen.classList.add(
+            "hidden"
+        );
+
+    }
+
+}
+
+
+/* =====================================
+   GAME OVER
+===================================== */
+
+function gameOver(){
+
+    document.getElementById(
+        "finalScore"
+    ).textContent =
+        score;
+
+    document.getElementById(
+        "finalBest"
+    ).textContent =
+        best;
+
+    let stars = "";
+
+    if(score >= target * .8){
+
+        stars = "⭐⭐⭐";
+
+    }
+    else if(score >= target * .5){
+
+        stars = "⭐⭐";
+
+    }
+    else{
+
+        stars = "⭐";
+
+    }
+
+    document.getElementById(
+        "gameStars"
+    ).textContent =
+        stars;
+
+    gameOverScreen.classList.remove(
+        "hidden"
+    );
+
+    playSound(180,.4);
+
+}
+
+
+/* =====================================
+   DELAY
+===================================== */
+
+function delay(ms){
+
+    return new Promise(
+        resolve =>
+            setTimeout(
+                resolve,
+                ms
+            )
+    );
+
+}
+
+
+/* =====================================
+   INITIAL BOARD
+===================================== */
+
+createBoard();
+
+renderBoard();
+
+updateScore();
+
+</script>
+
+</body>
+</html>
